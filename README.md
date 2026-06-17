@@ -1,3 +1,5 @@
+Live Link: http://35.175.135.226/
+
 # Capture
 
 Multiplayer grid game. Open the site, register, click tiles to claim them. Everyone sees updates live.
@@ -126,7 +128,7 @@ No `VITE_API_URL` needed — the browser uses relative `/api` and `/socket.io` o
 ### Production (EC2)
 
 ```
-Browser  →  :4173 only
+Browser  →  :80 only
               │
               ▼
          frontend (vite preview)
@@ -141,7 +143,7 @@ Browser  →  :4173 only
 
 ### Local dev
 
-Same idea: browser → `:5173` → Vite proxy → backend `:3001`.
+Same idea: browser → `:4173` → Vite proxy → backend `:3001`.
 
 ### Data model
 
