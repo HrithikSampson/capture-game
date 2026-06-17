@@ -1,0 +1,42 @@
+.grid-viewport {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+  cursor: grab;
+  background:
+    radial-gradient(ellipse at 50% 50%, rgba(99,102,241,0.04) 0%, transparent 70%),
+    var(--bg);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.grid-viewport:active {
+  cursor: grabbing;
+}
+
+.grid-canvas {
+  display: grid;
+  gap: var(--cell-gap);
+  transform-origin: center center;
+  will-change: transform;
+  user-select: none;
+  /* subtle outer glow for the whole grid */
+  filter: drop-shadow(0 0 40px rgba(99,102,241,0.08));
+}
+
+.grid-hint {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 11px;
+  color: var(--text-dim);
+  letter-spacing: 0.04em;
+  pointer-events: none;
+  background: rgba(10,10,15,0.7);
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  backdrop-filter: blur(8px);
+}

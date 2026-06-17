@@ -1,0 +1,65 @@
+.cell {
+  width: var(--cell-size);
+  height: var(--cell-size);
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+  background: var(--surface);
+  cursor: pointer;
+  padding: 0;
+  transition:
+    background var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition),
+    transform var(--transition);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.cell:hover {
+  border-color: var(--border-hover);
+  background: var(--surface-2);
+  transform: scale(1.15);
+  z-index: 10;
+}
+
+/* Claimed cell */
+.cell--claimed {
+  background: var(--cell-color);
+  border-color: color-mix(in srgb, var(--cell-color) 60%, #fff);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--cell-color) 40%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.15);
+}
+
+.cell--claimed:hover {
+  filter: brightness(1.2);
+  box-shadow:
+    0 0 8px color-mix(in srgb, var(--cell-color) 60%, transparent),
+    0 0 20px color-mix(in srgb, var(--cell-color) 30%, transparent),
+    inset 0 1px 0 rgba(255,255,255,0.2);
+  transform: scale(1.2);
+}
+
+/* My cell — subtle shimmer border */
+.cell--mine {
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.5),
+    0 0 8px color-mix(in srgb, var(--cell-color) 70%, transparent);
+}
+
+.cell--mine:hover {
+  box-shadow:
+    0 0 0 2px rgba(255,255,255,0.8),
+    0 0 16px color-mix(in srgb, var(--cell-color) 80%, transparent);
+}
+
+/* Cooldown state — can't steal */
+.cell--locked:not(.cell--mine) {
+  cursor: not-allowed;
+  opacity: 0.85;
+}
+
+/* Pop animation on capture */
+.cell.pop {
+  animation: pop-in 280ms cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+}
