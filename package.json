@@ -4,8 +4,11 @@
   "private": true,
   "scripts": {
     "dev": "concurrently --kill-others --names \"server,client\" --prefix-colors \"cyan,magenta\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
-    "build": "npm run build --prefix client",
-    "migration:run": "npm run migration:run --prefix server"
+    "build": "npm run build --prefix server && npm run build --prefix client",
+    "migration:run": "npm run migration:run --prefix server",
+    "docker:prod:up": "docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build",
+    "docker:prod:down": "docker compose -f docker-compose.prod.yml down",
+    "docker:prod:logs": "docker compose -f docker-compose.prod.yml logs -f"
   },
   "devDependencies": {
     "concurrently": "^8.2.2"

@@ -1,13 +1,20 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import socket, {
+import {
+  connectSocket,
+  disconnectSocket,
+  getSocket,
+  getToken,
+  setToken,
+  clearToken,
   type CellPayload,
   type GamePayload,
   type LeaderboardEntry,
-  type UserPayload,
+  type PlayerPayload,
 } from "./socket";
 import Grid from "./components/Grid";
 import Header from "./components/Header";
 import Leaderboard from "./components/Leaderboard";
+import LoginForm from "./components/LoginForm";
 import Toast from "./components/Toast";
 import { useCooldown } from "./hooks/useCooldown";
 import { cellKey } from "./cellKey";
@@ -21,10 +28,15 @@ interface ToastMsg {
 
 let toastId = 0;
 
+type AppPhase = "login" | "connecting" | "playing";
+
 export default function App() {
+  const [phase, setPhase] = useState<AppPhase>(() =>
+    getToken() ? "connecting" : "login"
+  );
   const [game, setGame] = useState<GamePayload | null>(null);
   const [cells, setCells] = useState<Map<string, CellPayload>>(new Map());
-  const [me, setMe] = useState<UserPayload | null>(null);
+  const [me, setMe] = useState<PlayerPayload | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [connected, setConnected] = useState(false);
@@ -42,7 +54,9 @@ export default function App() {
     setTimeout(() => setToasts((t) => t.filter((x) => x.id !== id)), 2800);
   }, []);
 
-  useEffect(() => {
+  const bindSocketEvents = useCallback(() => {
+    const socket = getSocket();
+
     socket.on("connect", () => setConnected(true));
     socket.on("disconnect", () => setConnected(false));
 
@@ -53,6 +67,7 @@ export default function App() {
       setCells(map);
       setMe(rawMe);
       setOnlineCount(count);
+      setPhase("playing");
     });
 
     socket.on("cell_updated", (cell) => {
@@ -69,7 +84,7 @@ export default function App() {
         if (!prev) return prev;
         const entry = entries.find((e) => e.id === prev.id);
         if (entry) return { ...prev, score: entry.score };
-        return { ...prev, score: 0 };
+        return prev;
       });
     });
 
@@ -80,25 +95,66 @@ export default function App() {
       addToast(`Wait ${(remainingMs / 1000).toFixed(1)}s before capturing again`, "error");
     });
 
-    return () => {
-      socket.off("connect");
-      socket.off("disconnect");
-      socket.off("init_state");
-      socket.off("cell_updated");
-      socket.off("leaderboard_update");
-      socket.off("online_count");
-      socket.off("cooldown_rejected");
-    };
+    socket.on("connect_error", () => {
+      clearToken();
+      disconnectSocket();
+      setPhase("login");
+      addToast("Session expired — please log in again", "error");
+    });
   }, [startCooldown, addToast]);
+
+  const startSession = useCallback(
+    (token: string) => {
+      setToken(token);
+      setPhase("connecting");
+      setGame(null);
+      setCells(new Map());
+      setMe(null);
+      disconnectSocket();
+      connectSocket(token);
+      bindSocketEvents();
+    },
+    [bindSocketEvents]
+  );
+
+  useEffect(() => {
+    const token = getToken();
+    if (token && phase === "connecting") {
+      connectSocket(token);
+      bindSocketEvents();
+    }
+    return () => {
+      disconnectSocket();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const handleLogout = useCallback(() => {
+    disconnectSocket();
+    clearToken();
+    setGame(null);
+    setCells(new Map());
+    setMe(null);
+    setLeaderboard([]);
+    setPhase("login");
+  }, []);
 
   const handleClaim = useCallback(
     (row: number, col: number) => {
       if (!connected || !game) return;
       startCooldown(game.cooldownMs);
-      socket.emit("claim_cell", { row, col });
+      getSocket().emit("claim_cell", { row, col });
     },
     [connected, game, startCooldown]
   );
+
+  if (phase === "login") {
+    return (
+      <div className="app app--login">
+        <LoginForm onSuccess={startSession} />
+      </div>
+    );
+  }
 
   return (
     <div className="app">
@@ -109,9 +165,10 @@ export default function App() {
         cooldownMs={cooldownMs}
         cooldownMaxMs={game?.cooldownMs ?? 1500}
         totalCells={totalCells}
+        onLogout={handleLogout}
       />
       <div className="app__body">
-        {game && (
+        {phase === "playing" && game && (
           <Grid
             rows={game.rows}
             cols={game.cols}
@@ -121,17 +178,22 @@ export default function App() {
             onClaim={handleClaim}
           />
         )}
-        <Leaderboard
-          entries={leaderboard}
-          myId={me?.id ?? null}
-          totalCells={totalCells}
-        />
+        {phase === "connecting" && (
+          <div className="app__connecting">Connecting to game…</div>
+        )}
+        {phase === "playing" && (
+          <Leaderboard
+            entries={leaderboard}
+            myId={me?.id ?? null}
+            totalCells={totalCells}
+          />
+        )}
       </div>
 
-      {!connected && (
+      {phase === "playing" && !connected && (
         <div className="app__disconnected">
           <span className="app__disconnected-dot" />
-          Connecting…
+          Reconnecting…
         </div>
       )}
 

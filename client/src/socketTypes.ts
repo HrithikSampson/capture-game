@@ -45,3 +45,12 @@ export interface ServerToClientEvents {
 export interface ClientToServerEvents {
   claim_cell: (data: { row: number; col: number }) => void;
 }
+
+export interface AuthResponse {
+  token: string;
+  player: {
+    id: string;
+    username: string;
+    color: string;
+  };
+}

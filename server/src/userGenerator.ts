@@ -22,14 +22,3 @@ export const PLAYER_COLORS = [
   "#f43f5e", "#a855f7", "#0ea5e9", "#10b981", "#f59e0b",
   "#6366f1", "#d946ef", "#64748b", "#0d9488", "#dc2626",
 ];
-
-let colorIndex = 0;
-
-export function generateUser(): { name: string; color: string } {
-  const adj = ADJECTIVES[Math.floor(Math.random() * ADJECTIVES.length)];
-  const animal = ANIMALS[Math.floor(Math.random() * ANIMALS.length)];
-  const name = `${adj}${animal}`;
-  const color = PLAYER_COLORS[colorIndex % PLAYER_COLORS.length];
-  colorIndex++;
-  return { name, color };
-}

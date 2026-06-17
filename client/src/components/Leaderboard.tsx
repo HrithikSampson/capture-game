@@ -50,7 +50,7 @@ export default function Leaderboard({ entries, myId, totalCells }: Props) {
                 className="leaderboard__dot"
                 style={{ background: entry.color, boxShadow: `0 0 6px ${entry.color}` }}
               />
-              <span className="leaderboard__name">{entry.name}</span>
+              <span className="leaderboard__name">{entry.username}</span>
               <span className="leaderboard__score">{entry.score}</span>
 
               {/* progress bar */}

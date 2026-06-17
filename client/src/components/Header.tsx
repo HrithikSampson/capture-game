@@ -1,14 +1,15 @@
 import React from "react";
-import type { UserPayload } from "../socket";
+import type { PlayerPayload } from "../socket";
 import "./Header.css";
 
 interface Props {
   gameName: string;
-  me: UserPayload | null;
+  me: PlayerPayload | null;
   onlineCount: number;
   cooldownMs: number;
   cooldownMaxMs: number;
   totalCells: number;
+  onLogout: () => void;
 }
 
 export default function Header({
@@ -18,6 +19,7 @@ export default function Header({
   cooldownMs,
   cooldownMaxMs,
   totalCells,
+  onLogout,
 }: Props) {
   const cooldownPct = Math.max(
     0,
@@ -39,7 +41,7 @@ export default function Header({
               className="header__color-dot"
               style={{ background: me.color, boxShadow: `0 0 8px ${me.color}` }}
             />
-            <span className="header__username">{me.name}</span>
+            <span className="header__username">{me.username}</span>
             <span className="header__score">
               {me.score}
               <span className="header__score-label"> tiles</span>
@@ -65,6 +67,9 @@ export default function Header({
           <span className="header__stat-value">{totalCells}</span>
           <span className="header__stat-label">tiles</span>
         </div>
+        <button type="button" className="header__logout" onClick={onLogout}>
+          Log out
+        </button>
       </div>
     </header>
   );

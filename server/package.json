@@ -5,13 +5,18 @@
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
+    "start": "node dist/index.js",
     "migration:run": "tsx src/migrate.ts",
+    "migration:run:prod": "node dist/migrate.js",
     "migration:revert": "tsx src/revert.ts"
   },
   "dependencies": {
+    "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
+    "jsonwebtoken": "^9.0.2",
+    "ioredis": "^5.4.1",
     "pg": "^8.12.0",
     "reflect-metadata": "^0.2.2",
     "socket.io": "^4.7.5",
@@ -19,8 +24,10 @@
     "uuid": "^10.0.0"
   },
   "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
     "@types/cors": "^2.8.17",
     "@types/express": "^4.17.21",
+    "@types/jsonwebtoken": "^9.0.6",
     "@types/node": "^20.14.0",
     "@types/uuid": "^10.0.0",
     "tsx": "^4.15.5",

@@ -120,3 +120,20 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
+
+.header__logout {
+  padding: 6px 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition);
+}
+
+.header__logout:hover {
+  border-color: var(--border-hover);
+  color: var(--text);
+}

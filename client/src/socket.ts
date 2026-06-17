@@ -1,56 +1,58 @@
 import { io, Socket } from "socket.io-client";
+import type {
+  ServerToClientEvents,
+  ClientToServerEvents,
+} from "./socketTypes";
 
-export interface GamePayload {
-  id: string;
-  name: string;
-  rows: number;
-  cols: number;
-  cooldownMs: number;
+export type { ServerToClientEvents, ClientToServerEvents } from "./socketTypes";
+export type {
+  GamePayload,
+  CellPayload,
+  PlayerPayload,
+  LeaderboardEntry,
+} from "./socketTypes";
+
+const TOKEN_KEY = "capture_token";
+
+let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
+
+export function getToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY);
 }
 
-export interface CellPayload {
-  row: number;
-  col: number;
-  ownerId: string | null;
-  ownerName: string | null;
-  ownerColor: string | null;
-  capturedAt: string | null;
+export function setToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token);
 }
 
-export interface UserPayload {
-  id: string;
-  name: string;
-  color: string;
-  score: number;
+export function clearToken(): void {
+  localStorage.removeItem(TOKEN_KEY);
 }
 
-export interface LeaderboardEntry {
-  id: string;
-  name: string;
-  color: string;
-  score: number;
+export function getSocket(): Socket<ServerToClientEvents, ClientToServerEvents> {
+  if (!socket) throw new Error("Socket not connected");
+  return socket;
 }
 
-export interface ServerToClientEvents {
-  init_state: (data: {
-    game: GamePayload;
-    cells: CellPayload[];
-    me: UserPayload;
-    onlineCount: number;
-  }) => void;
-  cell_updated: (cell: CellPayload) => void;
-  leaderboard_update: (entries: LeaderboardEntry[]) => void;
-  online_count: (count: number) => void;
-  cooldown_rejected: (data: { remainingMs: number }) => void;
+export function connectSocket(token: string): Socket<
+  ServerToClientEvents,
+  ClientToServerEvents
+> {
+  if (socket?.connected) {
+    socket.disconnect();
+  }
+
+  socket = io({
+    transports: ["websocket", "polling"],
+    autoConnect: true,
+    auth: { token },
+  });
+
+  return socket;
 }
 
-export interface ClientToServerEvents {
-  claim_cell: (data: { row: number; col: number }) => void;
+export function disconnectSocket(): void {
+  if (socket) {
+    socket.disconnect();
+    socket = null;
+  }
 }
-
-const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io({
-  transports: ["websocket"],
-  autoConnect: true,
-});
-
-export default socket;

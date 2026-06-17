@@ -7,7 +7,7 @@ import {
   OneToMany,
 } from "typeorm";
 import { Cell } from "./Cell";
-import { User } from "./User";
+import { GamePlayer } from "./GamePlayer";
 
 export type GameStatus = "active" | "inactive";
 
@@ -37,6 +37,6 @@ export class Game {
   @OneToMany(() => Cell, (cell) => cell.game)
   cells!: Cell[];
 
-  @OneToMany(() => User, (user) => user.game)
-  users!: User[];
+  @OneToMany(() => GamePlayer, (gp) => gp.game)
+  gamePlayers!: GamePlayer[];
 }
