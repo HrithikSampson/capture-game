@@ -56,10 +56,12 @@ services:
     environment:
       VITE_PROXY_TARGET: http://backend:3001
     ports:
-      - "${FRONTEND_PORT:-4173}:4173"
+      - "80:4173"
     depends_on:
       - backend
-
+  
 volumes:
   postgres_data:
   redis_data:
+
+
