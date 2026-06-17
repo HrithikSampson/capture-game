@@ -21,7 +21,13 @@ export function useCooldown() {
     }, step);
   }, []);
 
+  const resetCooldown = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    setCooldownMs(0);
+  }, []);
+
   useEffect(() => () => { if (timerRef.current) clearInterval(timerRef.current); }, []);
 
-  return { cooldownMs, isCooldown: cooldownMs > 0, startCooldown };
+  return { cooldownMs, isCooldown: cooldownMs > 0, startCooldown, resetCooldown };
 }

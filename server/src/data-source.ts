@@ -8,6 +8,7 @@ import { InitSchema1700000000000 } from "./migration/1700000000000-InitSchema";
 import { AddGameEntity1700000000001 } from "./migration/1700000000001-AddGameEntity";
 import { CellPrimaryKeyRowCol1700000000002 } from "./migration/1700000000002-CellPrimaryKeyRowCol";
 import { AddPlayerAuth1700000000003 } from "./migration/1700000000003-AddPlayerAuth";
+import { GameCompletion1700000000004 } from "./migration/1700000000004-GameCompletion";
 
 export const AppDataSource = new DataSource({
   type: "postgres",
@@ -20,5 +21,6 @@ export const AppDataSource = new DataSource({
     AddGameEntity1700000000001,
     CellPrimaryKeyRowCol1700000000002,
     AddPlayerAuth1700000000003,
+    GameCompletion1700000000004,
   ],
 });

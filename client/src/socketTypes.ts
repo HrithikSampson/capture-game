@@ -4,6 +4,9 @@ export interface GamePayload {
   rows: number;
   cols: number;
   cooldownMs: number;
+  status: "active" | "completed";
+  completedAt?: string | null;
+  winners?: LeaderboardEntry[];
 }
 
 export interface CellPayload {
@@ -43,13 +46,26 @@ export interface ServerToClientEvents {
   cell_claim_rejected: (data: {
     row: number;
     col: number;
-    reason: "already_claimed";
+    reason: "already_claimed" | "game_completed";
   }) => void;
   claim_ack: (data: { row: number; col: number }) => void;
+  game_completed: (data: {
+    game: GamePayload;
+    winners: LeaderboardEntry[];
+    finalLeaderboard: LeaderboardEntry[];
+  }) => void;
+  game_started: (data: {
+    game: GamePayload;
+    cells: CellPayload[];
+    me: PlayerPayload;
+    leaderboard: LeaderboardEntry[];
+  }) => void;
+  create_new_game_rejected: (data: { reason: string }) => void;
 }
 
 export interface ClientToServerEvents {
   claim_cell: (data: { row: number; col: number }) => void;
+  create_new_game: () => void;
 }
 
 export interface AuthResponse {

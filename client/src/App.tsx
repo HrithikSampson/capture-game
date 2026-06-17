@@ -15,6 +15,7 @@ import Grid from "./components/Grid";
 import Header from "./components/Header";
 import Leaderboard from "./components/Leaderboard";
 import LoginForm from "./components/LoginForm";
+import GameCompleteModal from "./components/GameCompleteModal";
 import Toast from "./components/Toast";
 import { useCooldown } from "./hooks/useCooldown";
 import { cellKey } from "./cellKey";
@@ -41,7 +42,10 @@ export default function App() {
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [connected, setConnected] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
-  const { cooldownMs, isCooldown, startCooldown } = useCooldown();
+  const [startingNewGame, setStartingNewGame] = useState(false);
+  const { cooldownMs, isCooldown, startCooldown, resetCooldown } = useCooldown();
+
+  const gameCompleted = game?.status === "completed";
 
   const totalCells = useMemo(
     () => (game ? game.rows * game.cols : 0),
@@ -68,6 +72,7 @@ export default function App() {
       setMe(rawMe);
       setOnlineCount(count);
       setPhase("playing");
+      setStartingNewGame(false);
     });
 
     socket.on("cell_updated", (cell) => {
@@ -95,8 +100,12 @@ export default function App() {
       addToast(`Wait ${(remainingMs / 1000).toFixed(1)}s before capturing again`, "error");
     });
 
-    socket.on("cell_claim_rejected", () => {
-      addToast("Tile already captured", "error");
+    socket.on("cell_claim_rejected", ({ reason }) => {
+      if (reason === "game_completed") {
+        addToast("Game is over — start a new game to play again", "error");
+      } else {
+        addToast("Tile already captured", "error");
+      }
     });
 
     socket.on("claim_ack", () => {
@@ -106,13 +115,46 @@ export default function App() {
       });
     });
 
+    socket.on("game_completed", ({ game: completedGame, finalLeaderboard }) => {
+      setGame(completedGame);
+      setLeaderboard(finalLeaderboard);
+      setMe((prev) => {
+        if (!prev) return prev;
+        const entry = finalLeaderboard.find((e) => e.id === prev.id);
+        if (entry) return { ...prev, score: entry.score };
+        return prev;
+      });
+    });
+
+    socket.on("game_started", ({ game: newGame, cells: rawCells, me: newMe, leaderboard: entries }) => {
+      const map = new Map<string, CellPayload>();
+      rawCells.forEach((c) => map.set(cellKey(c.row, c.col), c));
+      setGame(newGame);
+      setCells(map);
+      setMe(newMe);
+      setLeaderboard(entries);
+      resetCooldown();
+      setStartingNewGame(false);
+    });
+
+    socket.on("create_new_game_rejected", ({ reason }) => {
+      setStartingNewGame(false);
+      const message =
+        reason === "GAME_ALREADY_STARTED"
+          ? "A new game was already started"
+          : reason === "GAME_NOT_COMPLETED"
+            ? "Current game is still in progress"
+            : "Could not start new game";
+      addToast(message, "error");
+    });
+
     socket.on("connect_error", () => {
       clearToken();
       disconnectSocket();
       setPhase("login");
       addToast("Session expired — please log in again", "error");
     });
-  }, [startCooldown, addToast]);
+  }, [startCooldown, resetCooldown, addToast]);
 
   const startSession = useCallback(
     (token: string) => {
@@ -152,11 +194,16 @@ export default function App() {
 
   const handleClaim = useCallback(
     (row: number, col: number) => {
-      if (!connected || !game) return;
+      if (!connected || !game || game.status !== "active") return;
       getSocket().emit("claim_cell", { row, col });
     },
     [connected, game]
   );
+
+  const handleStartNewGame = useCallback(() => {
+    setStartingNewGame(true);
+    getSocket().emit("create_new_game");
+  }, []);
 
   if (phase === "login") {
     return (
@@ -185,6 +232,7 @@ export default function App() {
             cells={cells}
             myId={me?.id ?? null}
             isCooldown={isCooldown}
+            disabled={gameCompleted}
             onClaim={handleClaim}
           />
         )}
@@ -205,6 +253,15 @@ export default function App() {
           <span className="app__disconnected-dot" />
           Reconnecting…
         </div>
+      )}
+
+      {phase === "playing" && gameCompleted && game && (
+        <GameCompleteModal
+          game={game}
+          leaderboard={leaderboard}
+          loading={startingNewGame}
+          onStartNewGame={handleStartNewGame}
+        />
       )}
 
       <div className="app__toasts">

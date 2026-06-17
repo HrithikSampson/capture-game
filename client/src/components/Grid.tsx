@@ -10,10 +10,11 @@ interface Props {
   cells: Map<string, CellPayload>;
   myId: string | null;
   isCooldown: boolean;
+  disabled?: boolean;
   onClaim: (row: number, col: number) => void;
 }
 
-export default function Grid({ rows, cols, cells, myId, isCooldown, onClaim }: Props) {
+export default function Grid({ rows, cols, cells, myId, isCooldown, disabled, onClaim }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -58,7 +59,9 @@ export default function Grid({ rows, cols, cells, myId, isCooldown, onClaim }: P
 
   return (
     <div
-      className="grid-viewport"
+      className={["grid-viewport", disabled ? "grid-viewport--disabled" : ""]
+        .filter(Boolean)
+        .join(" ")}
       onMouseDown={handleMouseDown}
       onMouseMove={handleMouseMove}
       onMouseUp={handleMouseUp}
@@ -80,6 +83,7 @@ export default function Grid({ rows, cols, cells, myId, isCooldown, onClaim }: P
             cell={cell}
             isMe={cell.ownerId === myId}
             isCooldown={isCooldown}
+            disabled={disabled}
             onClaim={onClaim}
           />
         ))}

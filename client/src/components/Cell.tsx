@@ -6,15 +6,16 @@ interface Props {
   cell: CellPayload;
   isMe: boolean;
   isCooldown: boolean;
+  disabled?: boolean;
   onClaim: (row: number, col: number) => void;
 }
 
-function Cell({ cell, isMe, isCooldown, onClaim }: Props) {
+function Cell({ cell, isMe, isCooldown, disabled, onClaim }: Props) {
   const claimed = cell.ownerId !== null;
   const ref = useRef<HTMLButtonElement>(null);
 
   const handleClick = useCallback(() => {
-    if (claimed || isCooldown) return;
+    if (disabled || claimed || isCooldown) return;
     const el = ref.current;
     if (el) {
       el.classList.remove("pop");
@@ -22,7 +23,7 @@ function Cell({ cell, isMe, isCooldown, onClaim }: Props) {
       el.classList.add("pop");
     }
     onClaim(cell.row, cell.col);
-  }, [cell.row, cell.col, claimed, isCooldown, onClaim]);
+  }, [cell.row, cell.col, disabled, claimed, isCooldown, onClaim]);
 
   const title = claimed
     ? `Captured by ${cell.ownerName}${isMe ? " (you)" : ""}${
@@ -35,7 +36,7 @@ function Cell({ cell, isMe, isCooldown, onClaim }: Props) {
   return (
     <button
       ref={ref}
-      disabled={claimed}
+      disabled={claimed || disabled}
       className={[
         "cell",
         claimed ? "cell--claimed" : "cell--empty",

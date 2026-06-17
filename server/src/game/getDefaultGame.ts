@@ -16,12 +16,4 @@ export async function getDefaultGame(): Promise<Game> {
   return game;
 }
 
-export function toGamePayload(game: Game) {
-  return {
-    id: game.id,
-    name: game.name,
-    rows: game.rows,
-    cols: game.cols,
-    cooldownMs: game.cooldownMs,
-  };
-}
+export { toGamePayload } from "./gamePayload";

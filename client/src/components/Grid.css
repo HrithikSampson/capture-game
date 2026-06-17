@@ -15,6 +15,11 @@
   cursor: grabbing;
 }
 
+.grid-viewport--disabled {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
 .grid-canvas {
   display: grid;
   gap: var(--cell-gap);

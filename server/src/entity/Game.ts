@@ -9,7 +9,7 @@ import {
 import { Cell } from "./Cell";
 import { GamePlayer } from "./GamePlayer";
 
-export type GameStatus = "active" | "inactive";
+export type GameStatus = "active" | "completed";
 
 @Entity("games")
 export class Game {
@@ -30,6 +30,12 @@ export class Game {
 
   @Column({ type: "varchar", length: 20, default: "active" })
   status!: GameStatus;
+
+  @Column({ type: "timestamptz", nullable: true, default: null })
+  completedAt!: Date | null;
+
+  @Column({ type: "jsonb", nullable: true, default: null })
+  winnerIds!: string[] | null;
 
   @CreateDateColumn({ type: "timestamptz" })
   createdAt!: Date;

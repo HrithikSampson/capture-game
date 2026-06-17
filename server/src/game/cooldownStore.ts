@@ -25,3 +25,12 @@ export function getRemainingMs(gameId: string, playerId: string): number {
   if (!until) return 0;
   return Math.max(0, until.getTime() - Date.now());
 }
+
+export function clearGameCooldowns(gameId: string): void {
+  const prefix = `${gameId}:`;
+  for (const k of store.keys()) {
+    if (k.startsWith(prefix)) {
+      store.delete(k);
+    }
+  }
+}
