@@ -12,6 +12,8 @@ A competitive real-time tile-capture game. 1,500 tiles. Many players. One grid.
 | ORM | TypeORM with versioned migrations |
 | Real-time | Socket.io WebSockets |
 
+Each **game** owns its own grid, players, and leaderboard. Today the server loads a single default game (`capture-grid`); the schema is ready for multiple games later.
+
 ## Quick Start
 
 ### 1. Start PostgreSQL
@@ -73,10 +75,15 @@ capture/
 │       ├── index.ts              # Express + Socket.io
 │       ├── data-source.ts        # TypeORM DataSource
 │       ├── entity/
+│       │   ├── Game.ts
 │       │   ├── Cell.ts
 │       │   └── User.ts
+│       ├── game/
+│       │   ├── getDefaultGame.ts
+│       │   └── seedGameGrid.ts
 │       └── migration/
-│           └── 1700000000000-InitSchema.ts
+│           ├── 1700000000000-InitSchema.ts
+│           └── 1700000000001-AddGameEntity.ts
 └── client/
     └── src/
         ├── App.tsx

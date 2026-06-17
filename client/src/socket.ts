@@ -1,7 +1,14 @@
 import { io, Socket } from "socket.io-client";
 
-export interface CellPayload {
+export interface GamePayload {
   id: string;
+  name: string;
+  rows: number;
+  cols: number;
+  cooldownMs: number;
+}
+
+export interface CellPayload {
   row: number;
   col: number;
   ownerId: string | null;
@@ -25,7 +32,12 @@ export interface LeaderboardEntry {
 }
 
 export interface ServerToClientEvents {
-  init_state: (data: { cells: CellPayload[]; me: UserPayload; onlineCount: number }) => void;
+  init_state: (data: {
+    game: GamePayload;
+    cells: CellPayload[];
+    me: UserPayload;
+    onlineCount: number;
+  }) => void;
   cell_updated: (cell: CellPayload) => void;
   leaderboard_update: (entries: LeaderboardEntry[]) => void;
   online_count: (count: number) => void;
@@ -33,7 +45,7 @@ export interface ServerToClientEvents {
 }
 
 export interface ClientToServerEvents {
-  claim_cell: (data: { cellId: string }) => void;
+  claim_cell: (data: { row: number; col: number }) => void;
 }
 
 const socket: Socket<ServerToClientEvents, ClientToServerEvents> = io({

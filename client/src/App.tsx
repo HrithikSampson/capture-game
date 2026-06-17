@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useState } from "react";
 import socket, {
   type CellPayload,
+  type GamePayload,
   type LeaderboardEntry,
   type UserPayload,
 } from "./socket";
@@ -9,11 +10,8 @@ import Header from "./components/Header";
 import Leaderboard from "./components/Leaderboard";
 import Toast from "./components/Toast";
 import { useCooldown } from "./hooks/useCooldown";
+import { cellKey } from "./cellKey";
 import "./App.css";
-
-const GRID_ROWS = 30;
-const GRID_COLS = 50;
-const TOTAL_CELLS = GRID_ROWS * GRID_COLS;
 
 interface ToastMsg {
   id: number;
@@ -24,6 +22,7 @@ interface ToastMsg {
 let toastId = 0;
 
 export default function App() {
+  const [game, setGame] = useState<GamePayload | null>(null);
   const [cells, setCells] = useState<Map<string, CellPayload>>(new Map());
   const [me, setMe] = useState<UserPayload | null>(null);
   const [onlineCount, setOnlineCount] = useState(0);
@@ -31,6 +30,11 @@ export default function App() {
   const [connected, setConnected] = useState(false);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const { cooldownMs, isCooldown, startCooldown } = useCooldown();
+
+  const totalCells = useMemo(
+    () => (game ? game.rows * game.cols : 0),
+    [game]
+  );
 
   const addToast = useCallback((text: string, type: ToastMsg["type"] = "info") => {
     const id = ++toastId;
@@ -42,9 +46,10 @@ export default function App() {
     socket.on("connect", () => setConnected(true));
     socket.on("disconnect", () => setConnected(false));
 
-    socket.on("init_state", ({ cells: rawCells, me: rawMe, onlineCount: count }) => {
+    socket.on("init_state", ({ game: rawGame, cells: rawCells, me: rawMe, onlineCount: count }) => {
       const map = new Map<string, CellPayload>();
-      rawCells.forEach((c) => map.set(c.id, c));
+      rawCells.forEach((c) => map.set(cellKey(c.row, c.col), c));
+      setGame(rawGame);
       setCells(map);
       setMe(rawMe);
       setOnlineCount(count);
@@ -53,19 +58,13 @@ export default function App() {
     socket.on("cell_updated", (cell) => {
       setCells((prev) => {
         const next = new Map(prev);
-        next.set(cell.id, cell);
+        next.set(cellKey(cell.row, cell.col), cell);
         return next;
-      });
-      // Update my score if I'm involved
-      setMe((prev) => {
-        if (!prev) return prev;
-        return prev; // score is pushed via leaderboard_update
       });
     });
 
     socket.on("leaderboard_update", (entries) => {
       setLeaderboard(entries);
-      // Sync my score from leaderboard
       setMe((prev) => {
         if (!prev) return prev;
         const entry = entries.find((e) => e.id === prev.id);
@@ -93,34 +92,39 @@ export default function App() {
   }, [startCooldown, addToast]);
 
   const handleClaim = useCallback(
-    (cellId: string) => {
-      if (!connected) return;
-      // Optimistic cooldown (1500ms matches server)
-      startCooldown(1500);
-      socket.emit("claim_cell", { cellId });
+    (row: number, col: number) => {
+      if (!connected || !game) return;
+      startCooldown(game.cooldownMs);
+      socket.emit("claim_cell", { row, col });
     },
-    [connected, startCooldown]
+    [connected, game, startCooldown]
   );
 
   return (
     <div className="app">
       <Header
+        gameName={game?.name ?? "Capture"}
         me={me}
         onlineCount={onlineCount}
         cooldownMs={cooldownMs}
-        totalCells={TOTAL_CELLS}
+        cooldownMaxMs={game?.cooldownMs ?? 1500}
+        totalCells={totalCells}
       />
       <div className="app__body">
-        <Grid
-          cells={cells}
-          myId={me?.id ?? null}
-          isCooldown={isCooldown}
-          onClaim={handleClaim}
-        />
+        {game && (
+          <Grid
+            rows={game.rows}
+            cols={game.cols}
+            cells={cells}
+            myId={me?.id ?? null}
+            isCooldown={isCooldown}
+            onClaim={handleClaim}
+          />
+        )}
         <Leaderboard
           entries={leaderboard}
           myId={me?.id ?? null}
-          totalCells={TOTAL_CELLS}
+          totalCells={totalCells}
         />
       </div>
 

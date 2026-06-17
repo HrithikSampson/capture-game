@@ -6,7 +6,7 @@ interface Props {
   cell: CellPayload;
   isMe: boolean;
   isCooldown: boolean;
-  onClaim: (id: string) => void;
+  onClaim: (row: number, col: number) => void;
 }
 
 function Cell({ cell, isMe, isCooldown, onClaim }: Props) {
@@ -15,15 +15,14 @@ function Cell({ cell, isMe, isCooldown, onClaim }: Props) {
 
   const handleClick = useCallback(() => {
     if (isCooldown && !isMe) return;
-    // Trigger pop animation
     const el = ref.current;
     if (el) {
       el.classList.remove("pop");
-      void el.offsetWidth; // reflow
+      void el.offsetWidth;
       el.classList.add("pop");
     }
-    onClaim(cell.id);
-  }, [cell.id, isMe, isCooldown, onClaim]);
+    onClaim(cell.row, cell.col);
+  }, [cell.row, cell.col, isMe, isCooldown, onClaim]);
 
   const title = claimed
     ? `${cell.ownerName}${isMe ? " (you)" : ""} • ${

@@ -1,20 +1,19 @@
 import React, { useCallback, useMemo, useRef, useState } from "react";
 import type { CellPayload } from "../socket";
+import { cellKey } from "../cellKey";
 import Cell from "./Cell";
 import "./Grid.css";
 
-const GRID_ROWS = 30;
-const GRID_COLS = 50;
-
 interface Props {
+  rows: number;
+  cols: number;
   cells: Map<string, CellPayload>;
   myId: string | null;
   isCooldown: boolean;
-  onClaim: (id: string) => void;
+  onClaim: (row: number, col: number) => void;
 }
 
-export default function Grid({ cells, myId, isCooldown, onClaim }: Props) {
-  // Pan support
+export default function Grid({ rows, cols, cells, myId, isCooldown, onClaim }: Props) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [pan, setPan] = useState({ x: 0, y: 0 });
   const [scale, setScale] = useState(1);
@@ -48,14 +47,14 @@ export default function Grid({ cells, myId, isCooldown, onClaim }: Props) {
 
   const orderedCells = useMemo(() => {
     const arr: CellPayload[] = [];
-    for (let r = 0; r < GRID_ROWS; r++) {
-      for (let c = 0; c < GRID_COLS; c++) {
-        const cell = cells.get(`${r}_${c}`);
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        const cell = cells.get(cellKey(r, c));
         if (cell) arr.push(cell);
       }
     }
     return arr;
-  }, [cells]);
+  }, [cells, rows, cols]);
 
   return (
     <div
@@ -71,13 +70,13 @@ export default function Grid({ cells, myId, isCooldown, onClaim }: Props) {
         className="grid-canvas"
         style={{
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${scale})`,
-          gridTemplateColumns: `repeat(${GRID_COLS}, var(--cell-size))`,
-          gridTemplateRows: `repeat(${GRID_ROWS}, var(--cell-size))`,
+          gridTemplateColumns: `repeat(${cols}, var(--cell-size))`,
+          gridTemplateRows: `repeat(${rows}, var(--cell-size))`,
         }}
       >
         {orderedCells.map((cell) => (
           <Cell
-            key={cell.id}
+            key={cellKey(cell.row, cell.col)}
             cell={cell}
             isMe={cell.ownerId === myId}
             isCooldown={isCooldown}

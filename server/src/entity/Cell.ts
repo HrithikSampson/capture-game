@@ -1,15 +1,22 @@
 import "reflect-metadata";
-import { Entity, PrimaryColumn, Column } from "typeorm";
+import {
+  Entity,
+  PrimaryColumn,
+  Column,
+  ManyToOne,
+  JoinColumn,
+} from "typeorm";
+import { Game } from "./Game";
 
 @Entity("cells")
 export class Cell {
-  @PrimaryColumn({ type: "varchar", length: 20 })
-  id!: string; // "row_col" e.g. "0_0"
+  @PrimaryColumn({ type: "varchar", length: 64 })
+  gameId!: string;
 
-  @Column({ type: "int" })
+  @PrimaryColumn({ type: "int" })
   row!: number;
 
-  @Column({ type: "int" })
+  @PrimaryColumn({ type: "int" })
   col!: number;
 
   @Column({ type: "varchar", length: 64, nullable: true, default: null })
@@ -23,4 +30,8 @@ export class Cell {
 
   @Column({ type: "timestamptz", nullable: true, default: null })
   capturedAt!: Date | null;
+
+  @ManyToOne(() => Game, (game) => game.cells, { onDelete: "CASCADE" })
+  @JoinColumn({ name: "gameId" })
+  game!: Game;
 }

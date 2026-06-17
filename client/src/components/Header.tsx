@@ -3,21 +3,33 @@ import type { UserPayload } from "../socket";
 import "./Header.css";
 
 interface Props {
+  gameName: string;
   me: UserPayload | null;
   onlineCount: number;
   cooldownMs: number;
+  cooldownMaxMs: number;
   totalCells: number;
 }
 
-export default function Header({ me, onlineCount, cooldownMs, totalCells }: Props) {
-  const cooldownPct = Math.max(0, Math.min(100, (cooldownMs / 1500) * 100));
+export default function Header({
+  gameName,
+  me,
+  onlineCount,
+  cooldownMs,
+  cooldownMaxMs,
+  totalCells,
+}: Props) {
+  const cooldownPct = Math.max(
+    0,
+    Math.min(100, (cooldownMs / cooldownMaxMs) * 100)
+  );
   const isCooling = cooldownMs > 0;
 
   return (
     <header className="header">
       <div className="header__brand">
         <span className="header__logo">⬛</span>
-        <span className="header__title">Capture</span>
+        <span className="header__title">{gameName}</span>
       </div>
 
       <div className="header__center">
