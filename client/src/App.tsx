@@ -95,6 +95,17 @@ export default function App() {
       addToast(`Wait ${(remainingMs / 1000).toFixed(1)}s before capturing again`, "error");
     });
 
+    socket.on("cell_claim_rejected", () => {
+      addToast("Tile already captured", "error");
+    });
+
+    socket.on("claim_ack", () => {
+      setGame((g) => {
+        if (g) startCooldown(g.cooldownMs);
+        return g;
+      });
+    });
+
     socket.on("connect_error", () => {
       clearToken();
       disconnectSocket();
@@ -142,10 +153,9 @@ export default function App() {
   const handleClaim = useCallback(
     (row: number, col: number) => {
       if (!connected || !game) return;
-      startCooldown(game.cooldownMs);
       getSocket().emit("claim_cell", { row, col });
     },
-    [connected, game, startCooldown]
+    [connected, game]
   );
 
   if (phase === "login") {

@@ -125,6 +125,7 @@ io.on("connection", async (socket) => {
     }
 
     let scoreDeltas: { playerId: string; delta: number }[] = [];
+    let claimSucceeded = false;
 
     await AppDataSource.transaction(async (em) => {
       const gp = await em.findOne(GamePlayer, { where: { gameId, playerId } });
@@ -144,36 +145,22 @@ io.on("connection", async (socket) => {
 
       if (!cell) return;
 
-      const previousOwnerId = cell.ownerId;
-      const now = new Date();
-
-      if (cell.ownerId === playerId) {
-        cell.ownerId = null;
-        cell.ownerName = null;
-        cell.ownerColor = null;
-        cell.capturedAt = null;
-        gp.score = Math.max(0, gp.score - 1);
-        scoreDeltas = [{ playerId, delta: -1 }];
-      } else {
-        if (previousOwnerId) {
-          await em
-            .createQueryBuilder()
-            .update(GamePlayer)
-            .set({ score: () => `GREATEST(0, score - 1)` })
-            .where("gameId = :gameId AND playerId = :playerId", {
-              gameId,
-              playerId: previousOwnerId,
-            })
-            .execute();
-          scoreDeltas.push({ playerId: previousOwnerId, delta: -1 });
-        }
-        cell.ownerId = freshPlayer.id;
-        cell.ownerName = freshPlayer.username;
-        cell.ownerColor = freshPlayer.color;
-        cell.capturedAt = now;
-        gp.score = gp.score + 1;
-        scoreDeltas.push({ playerId, delta: 1 });
+      if (cell.ownerId !== null) {
+        socket.emit("cell_claim_rejected", {
+          row,
+          col,
+          reason: "already_claimed",
+        });
+        return;
       }
+
+      const now = new Date();
+      cell.ownerId = freshPlayer.id;
+      cell.ownerName = freshPlayer.username;
+      cell.ownerColor = freshPlayer.color;
+      cell.capturedAt = now;
+      gp.score = gp.score + 1;
+      scoreDeltas = [{ playerId, delta: 1 }];
 
       setCooldownUntil(
         gameId,
@@ -185,13 +172,20 @@ io.on("connection", async (socket) => {
       await em.save(gp);
 
       io.emit("cell_updated", toPayload(cell));
+      claimSucceeded = true;
     });
+
+    if (claimSucceeded) {
+      socket.emit("claim_ack", { row, col });
+    }
 
     for (const { playerId: id, delta } of scoreDeltas) {
       await applyScoreDelta(gameId, id, delta);
     }
 
-    await broadcastLeaderboard();
+    if (scoreDeltas.length > 0) {
+      await broadcastLeaderboard();
+    }
   });
 
   socket.on("disconnect", () => {

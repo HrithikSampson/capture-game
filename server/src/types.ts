@@ -40,6 +40,12 @@ export interface ServerToClientEvents {
   leaderboard_update: (entries: LeaderboardEntry[]) => void;
   online_count: (count: number) => void;
   cooldown_rejected: (data: { remainingMs: number }) => void;
+  cell_claim_rejected: (data: {
+    row: number;
+    col: number;
+    reason: "already_claimed";
+  }) => void;
+  claim_ack: (data: { row: number; col: number }) => void;
 }
 
 export interface ClientToServerEvents {

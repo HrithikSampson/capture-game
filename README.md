@@ -2,7 +2,7 @@
 
 Multiplayer grid game. Open the site, register, click tiles to claim them. Everyone sees updates live.
 
-Grid: 50 × 30 tiles (1,500 total). Your score is how many tiles you currently own. Steal tiles from others or release your own by clicking again. Short cooldown between clicks.
+Grid: 50 × 30 tiles (1,500 total). Your score is how many tiles you currently own. Empty tiles can be claimed once. First click wins if two players race for the same tile. Captured tiles cannot be stolen or released. Short cooldown after each successful capture.
 
 ---
 

@@ -14,7 +14,7 @@ function Cell({ cell, isMe, isCooldown, onClaim }: Props) {
   const ref = useRef<HTMLButtonElement>(null);
 
   const handleClick = useCallback(() => {
-    if (isCooldown && !isMe) return;
+    if (claimed || isCooldown) return;
     const el = ref.current;
     if (el) {
       el.classList.remove("pop");
@@ -22,22 +22,25 @@ function Cell({ cell, isMe, isCooldown, onClaim }: Props) {
       el.classList.add("pop");
     }
     onClaim(cell.row, cell.col);
-  }, [cell.row, cell.col, isMe, isCooldown, onClaim]);
+  }, [cell.row, cell.col, claimed, isCooldown, onClaim]);
 
   const title = claimed
-    ? `${cell.ownerName}${isMe ? " (you)" : ""} • ${
-        cell.capturedAt ? new Date(cell.capturedAt).toLocaleTimeString() : ""
+    ? `Captured by ${cell.ownerName}${isMe ? " (you)" : ""}${
+        cell.capturedAt
+          ? ` • ${new Date(cell.capturedAt).toLocaleTimeString()}`
+          : ""
       }`
-    : "Unclaimed — click to capture";
+    : "Click to capture";
 
   return (
     <button
       ref={ref}
+      disabled={claimed}
       className={[
         "cell",
         claimed ? "cell--claimed" : "cell--empty",
         isMe ? "cell--mine" : "",
-        isCooldown && !isMe ? "cell--locked" : "",
+        !claimed && isCooldown ? "cell--cooldown" : "",
       ]
         .filter(Boolean)
         .join(" ")}

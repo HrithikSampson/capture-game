@@ -22,22 +22,19 @@
   z-index: 10;
 }
 
-/* Claimed cell */
+/* Claimed cell — immutable, not clickable */
 .cell--claimed {
   background: var(--cell-color);
   border-color: color-mix(in srgb, var(--cell-color) 60%, #fff);
   box-shadow:
     0 0 0 1px color-mix(in srgb, var(--cell-color) 40%, transparent),
     inset 0 1px 0 rgba(255,255,255,0.15);
+  cursor: default;
 }
 
 .cell--claimed:hover {
-  filter: brightness(1.2);
-  box-shadow:
-    0 0 8px color-mix(in srgb, var(--cell-color) 60%, transparent),
-    0 0 20px color-mix(in srgb, var(--cell-color) 30%, transparent),
-    inset 0 1px 0 rgba(255,255,255,0.2);
-  transform: scale(1.2);
+  filter: brightness(1.05);
+  transform: none;
 }
 
 /* My cell — subtle shimmer border */
@@ -53,10 +50,14 @@
     0 0 16px color-mix(in srgb, var(--cell-color) 80%, transparent);
 }
 
-/* Cooldown state — can't steal */
-.cell--locked:not(.cell--mine) {
+/* Cooldown — empty tiles temporarily unclaimable */
+.cell--cooldown {
   cursor: not-allowed;
   opacity: 0.85;
+}
+
+.cell--cooldown:hover {
+  transform: none;
 }
 
 /* Pop animation on capture */
