@@ -1,6 +1,5 @@
 import type { AuthResponse } from "./socketTypes";
-
-const API_BASE = "";
+import { API_URL } from "./config";
 
 async function parseJsonResponse(res: Response): Promise<Record<string, unknown>> {
   const text = await res.text();
@@ -29,7 +28,7 @@ async function authRequest(
 ): Promise<AuthResponse> {
   let res: Response;
   try {
-    res = await fetch(`${API_BASE}${path}`, {
+    res = await fetch(`${API_URL}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ username, password }),
@@ -47,7 +46,7 @@ async function authRequest(
     );
   }
 
-  return data as AuthResponse;
+  return data as unknown as AuthResponse;
 }
 
 export async function register(

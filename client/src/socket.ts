@@ -12,6 +12,8 @@ export type {
   LeaderboardEntry,
 } from "./socketTypes";
 
+import { SOCKET_URL } from "./config";
+
 const TOKEN_KEY = "capture_token";
 
 let socket: Socket<ServerToClientEvents, ClientToServerEvents> | null = null;
@@ -41,7 +43,7 @@ export function connectSocket(token: string): Socket<
     socket.disconnect();
   }
 
-  socket = io({
+  socket = io(SOCKET_URL || undefined, {
     transports: ["websocket", "polling"],
     autoConnect: true,
     auth: { token },

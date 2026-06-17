@@ -9,11 +9,18 @@ COPY index.html vite.config.ts tsconfig.json ./
 COPY src ./src
 RUN npm run build
 
-FROM nginx:1.27-alpine AS runner
+FROM node:20-alpine AS runner
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY --from=builder /app/dist /usr/share/nginx/html
+WORKDIR /app
 
-EXPOSE 80
+ENV VITE_PROXY_TARGET=http://backend:3001
 
-CMD ["nginx", "-g", "daemon off;"]
+COPY package.json package-lock.json ./
+RUN npm ci
+
+COPY --from=builder /app/dist ./dist
+COPY vite.config.ts ./
+
+EXPOSE 4173
+
+CMD ["npx", "vite", "preview", "--host", "0.0.0.0", "--port", "4173"]
