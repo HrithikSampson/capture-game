@@ -1,155 +1,159 @@
-# Capture — Real-Time Shared Grid
+# Capture
 
-A competitive real-time tile-capture game. 1,500 tiles. Many players. One grid.
+Multiplayer grid game. Open the site, register, click tiles to claim them. Everyone sees updates live.
 
-## Stack
+Grid: 50 × 30 tiles (1,500 total). Your score is how many tiles you currently own. Steal tiles from others or release your own by clicking again. Short cooldown between clicks.
 
-| Layer | Tech |
-|-------|------|
-| Frontend | React 18 + TypeScript + Vite |
-| Backend | Node.js + Express + Socket.io |
-| Database | PostgreSQL 16 (via Docker) |
-| ORM | TypeORM with versioned migrations |
-| Auth | JWT + bcrypt (register / login) |
-| Real-time | Socket.io WebSockets |
-| Leaderboard | Redis sorted sets (`ZREVRANGE` top 10) |
+---
 
-Each **game** owns its own grid, players, and leaderboard. Today the server loads a single default game (`capture-grid`); the schema is ready for multiple games later.
+## Run locally (development)
 
-## Quick Start
+You need Node 20+, Postgres, and Redis running.
 
-### 1. Start PostgreSQL
+### 1. Start Postgres and Redis
 
 ```bash
 docker compose up -d
 ```
 
+Or run Postgres and Redis however you already have them on your machine.
+
 ### 2. Install dependencies
 
 ```bash
-npm install                    # root (installs concurrently)
-npm install --prefix server    # server deps
-npm install --prefix client    # client deps
+npm install
+npm install --prefix server
+npm install --prefix client
 ```
 
-### 3. Run database migration
+### 3. Configure the server
+
+```bash
+cp server/.env.example server/.env
+```
+
+Typical `server/.env`:
+
+```
+DATABASE_URL=postgresql://capture:capture@localhost:5432/capture
+REDIS_URL=redis://localhost:6379
+PORT=3001
+JWT_SECRET=some-local-dev-secret
+```
+
+### 4. Run migrations
 
 ```bash
 npm run migration:run --prefix server
 ```
 
-### 4. Start dev servers
+### 5. Start the app
 
 ```bash
 npm run dev
 ```
 
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:3001
+Open http://localhost:5173 — login and API calls go through the Vite dev server to the backend on 3001. You do not need to open the backend port in a browser.
 
-Register or log in to play. Your account, score, and captured tiles persist across reconnects.
+---
 
-## Game Rules
+## Run on EC2 (Docker)
 
-- Click any tile to **capture** it
-- Click your **own tile** to release it
-- Click **someone else's tile** to steal it
-- **Cooldown** between captures is set per game (`Game.cooldownMs`, default 1.5s)
-- Leaderboard ranks by tiles owned
+Four containers: Postgres, Redis, backend, frontend. Only the **frontend port** is public. Login, API, and WebSocket all go through the frontend URL; the backend stays on the internal Docker network.
 
-## Auth
+### 1. EC2 instance
 
-| Route | Description |
-|-------|-------------|
-| `POST /api/auth/register` | Create account `{ username, password }` |
-| `POST /api/auth/login` | Log in, returns JWT |
-
-Socket connects with `auth: { token }`. Player identity is a stable UUID — not `socket.id`.
-
-## Architecture
-
-```
-Browser ──REST (login)──► Express
-Browser ──WebSocket (JWT)──► Socket.io ──► PostgreSQL
-                              │
-                              └──► io.emit('cell_updated') ──► All browsers
-```
-
-**Entities:** `Player` (account) → `GamePlayer` (score per game, Postgres source of truth) → `Cell` (tile ownership)
-
-**Leaderboard:** Postgres updates on capture; Redis `leaderboard:{gameId}` ZSET mirrors scores for O(log N) top-10 reads. Rebuilt from Postgres on server boot.
-
-**Cooldown:** duration from `Game.cooldownMs`; active timer in server memory (`cooldownStore`)
-
-## Environment
-
-`server/.env`:
-
-```
-DATABASE_URL=postgresql://capture:capture@localhost:5432/capture
-PORT=3001
-JWT_SECRET=change-me-in-production-use-a-long-random-string
-REDIS_URL=redis://localhost:6379
-```
-
-## Local dev vs production containers
-
-| File | Purpose |
-|------|---------|
-| [`docker-compose.yml`](docker-compose.yml) | Dev infra only — Postgres + Redis |
-| [`docker-compose.prod.yml`](docker-compose.prod.yml) | Full stack — Postgres, Redis, backend, frontend |
-| [`server/Dockerfile`](server/Dockerfile) | Node backend (runs migrations on start) |
-| [`client/Dockerfile`](client/Dockerfile) | Vite build + nginx (proxies `/api` and `/socket.io`) |
-
-## Deploy on EC2 (Docker)
-
-### 1. EC2 setup
-
-- AMI: Amazon Linux 2023 or Ubuntu 22.04
-- Instance: `t3.small` or larger
-- Security group: inbound **80** (HTTP) from your IP or `0.0.0.0/0`
-- Install Docker + Docker Compose plugin on the instance
+- Ubuntu 22.04 or Amazon Linux 2023
+- Security group inbound rules:
+  - **22** — SSH (your IP only)
+  - **4173** — the game (anywhere, or your IP)
+- Do **not** open port 3001
+- Install Docker and Docker Compose
 
 ### 2. Deploy
 
 ```bash
-git clone <your-repo> capture && cd capture
+git clone <your-repo> capture
+cd capture
 
 cp .env.prod.example .env.prod
-# Edit .env.prod — set a strong JWT_SECRET
-
-npm run docker:prod:up
+nano .env.prod   # set JWT_SECRET
 ```
 
-App is live at `http://<ec2-public-ip>/`
+```bash
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d --build
+```
+
+Open **http://\<ec2-public-ip\>:4173** — that is the only URL you need.
+
+Health check (via the proxy): **http://\<ec2-public-ip\>:4173/api** won't work for GET /health on root — use logs if debugging: `docker compose -f docker-compose.prod.yml logs backend`
 
 ### 3. Useful commands
 
 ```bash
-npm run docker:prod:logs    # tail all container logs
-npm run docker:prod:down    # stop stack
+docker compose -f docker-compose.prod.yml logs -f
+docker compose -f docker-compose.prod.yml down
+docker compose -f docker-compose.prod.yml --env-file .env.prod up -d
 ```
 
-### Production architecture
+---
+
+## Environment variables
+
+### Server (`server/.env` locally, `.env.prod` for Docker backend)
+
+| Variable | Purpose |
+|----------|---------|
+| `DATABASE_URL` | Postgres connection string |
+| `REDIS_URL` | Redis connection string |
+| `JWT_SECRET` | Signs login tokens |
+| `PORT` | Backend port (default 3001, internal in Docker) |
+
+### Production (`.env.prod`)
+
+| Variable | Purpose |
+|----------|---------|
+| `JWT_SECRET` | Required — signs login tokens |
+| `POSTGRES_PASSWORD` | Postgres password in Docker |
+| `FRONTEND_PORT` | Public port (default 4173) |
+
+No `VITE_API_URL` needed — the browser uses relative `/api` and `/socket.io` on the same host as the frontend.
+
+---
+
+## Architecture
+
+### Production (EC2)
 
 ```
-Internet :80
-    │
-    ▼
-┌─────────────┐     /api, /socket.io     ┌─────────────┐
-│  frontend   │ ───────────────────────► │   backend   │
-│   (nginx)   │                          │  (Node.js)  │
-└─────────────┘                          └──────┬──────┘
-                                                │
-                                    ┌───────────┴───────────┐
-                                    ▼                       ▼
-                              ┌──────────┐            ┌──────────┐
-                              │ postgres │            │  redis   │
-                              └──────────┘            └──────────┘
+Browser  →  :4173 only
+              │
+              ▼
+         frontend (vite preview)
+              │  proxies /api, /socket.io
+              ▼
+         backend :3001  (Docker internal, not on internet)
+              │
+         ┌────┴────┐
+         ▼         ▼
+    postgres    redis
 ```
 
-The frontend container serves the React app and reverse-proxies API and WebSocket traffic to the backend over the internal Docker network. Only port **80** is exposed publicly.
+### Local dev
 
-### HTTPS (recommended for production)
+Same idea: browser → `:5173` → Vite proxy → backend `:3001`.
 
-Put an Application Load Balancer or nginx/certbot in front with TLS, or use a reverse proxy like Caddy. Update the EC2 security group to allow 443 instead of (or in addition to) 80.
+### Data model
+
+- **Player** — account (username, password, color)
+- **GamePlayer** — score per game (Postgres, source of truth)
+- **Cell** — tile ownership `(gameId, row, col)`
+- **Game** — grid size, cooldown (`cooldownMs`)
+
+### Capture flow
+
+1. Client sends `claim_cell` over WebSocket (JWT in socket auth).
+2. Postgres transaction with row lock on the cell.
+3. Updates `cells` and `game_players` (score).
+4. Mirrors score to Redis sorted set.
+5. Broadcasts `cell_updated` and `leaderboard_update` to all clients.

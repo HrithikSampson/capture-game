@@ -53,8 +53,10 @@ services:
       dockerfile: Dockerfile
     container_name: capture_frontend
     restart: unless-stopped
+    environment:
+      VITE_PROXY_TARGET: http://backend:3001
     ports:
-      - "${HTTP_PORT:-80}:80"
+      - "${FRONTEND_PORT:-4173}:4173"
     depends_on:
       - backend
 
